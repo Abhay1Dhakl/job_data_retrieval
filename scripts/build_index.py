@@ -12,7 +12,7 @@ from tqdm import tqdm
 from app.core.config import get_settings
 from app.rag.embeddings import EmbeddingModel
 from app.rag.preprocess import chunk_text, clean_html
-from app.rag.vector_store import ChromaVectorStore
+from app.rag.vector_store import PineconeVectorStore
 
 
 @dataclass
@@ -55,11 +55,22 @@ def load_jobs(path: str) -> List[JobRecord]:
     return records
 
 
-def build_index(data_path: str, vector_dir: str, collection_name: str) -> None:
+def build_index(data_path: str, vector_dir: str, index_name: str) -> None:
     os.makedirs(vector_dir, exist_ok=True)
     settings = get_settings()
-    embedder = EmbeddingModel(settings.embedding_model, settings.embedding_batch_size)
-    vector_store = ChromaVectorStore(vector_dir, collection_name)
+    embedder = EmbeddingModel(
+        settings.embedding_model,
+        settings.gemini_api_key,
+        settings.embedding_batch_size,
+    )
+    vector_store = PineconeVectorStore(
+        api_key=settings.pinecone_api_key,
+        index_name=index_name,
+        cloud=settings.pinecone_cloud,
+        region=settings.pinecone_region,
+        metric=settings.pinecone_metric,
+        dimension=embedder.dimension(),
+    )
 
     ids: List[str] = []
     documents: List[str] = []
@@ -98,7 +109,7 @@ def build_index(data_path: str, vector_dir: str, collection_name: str) -> None:
     with open(bm25_path, "wb") as f:
         pickle.dump({"ids": ids, "texts": documents, "metadatas": metadatas}, f)
 
-    print(f"Indexed {len(ids)} chunks into {collection_name}.")
+    print(f"Indexed {len(ids)} chunks into {index_name}.")
     print(f"BM25 index saved to {bm25_path}.")
 
 
@@ -107,10 +118,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build vector and BM25 indexes.")
     parser.add_argument("--data", default=settings.data_path, help="Path to CSV dataset")
     parser.add_argument("--vector-dir", default=settings.vector_dir, help="Vector store directory")
-    parser.add_argument("--collection", default=settings.collection_name, help="Collection name")
+    parser.add_argument("--index", default=settings.pinecone_index, help="Pinecone index name")
     args = parser.parse_args()
 
-    build_index(args.data, args.vector_dir, args.collection)
+    build_index(args.data, args.vector_dir, args.index)
 
 
 if __name__ == "__main__":

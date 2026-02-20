@@ -3,16 +3,16 @@
 ## 1) Architecture Overview
 The system is a standard RAG stack:
 - **Ingestion**: `scripts/build_index.py` reads the LF Jobs CSV, cleans HTML, and chunks descriptions.
-- **Embedding**: `app/rag/embeddings.py` uses a Hugging Face sentence-transformer to embed each chunk.
-- **Vector Store**: `app/rag/vector_store.py` stores embeddings and metadata in Chroma for similarity search.
+- **Embedding**: `app/rag/embeddings.py` uses Gemini embeddings to embed each chunk.
+- **Vector Store**: `app/rag/vector_store.py` stores embeddings and metadata in Pinecone for similarity search.
 - **Retriever**: `app/rag/retriever.py` runs vector search and optionally combines it with BM25 scores for hybrid retrieval.
 - **Reranker (optional)**: `app/rag/reranker.py` uses a cross-encoder model for improved ranking.
 - **LLM**: `app/rag/llm.py` calls an OpenAI-compatible endpoint to synthesize a concise answer.
 - **API**: `app/api/routes.py` exposes `POST /api/query`.
 
 ## 2) Engineering Decisions
-- **Chroma for vector storage**: Persistent, easy to operate, fast for small-to-medium datasets.
-- **Sentence-Transformers embeddings**: Strong baseline with minimal operational overhead.
+- **Pinecone for vector storage**: Managed vector store with scalable search.
+- **Gemini embeddings**: Hosted embeddings with strong multilingual and semantic performance.
 - **Hybrid retrieval**: BM25 adds lexical precision; combined scoring uses min-max normalization.
 - **OpenAI-compatible LLM**: Keeps provider flexible (OpenAI, Azure, or other compatible endpoints).
 - **Config via Pydantic Settings**: Centralized, typed configuration with `.env` support.
@@ -58,5 +58,5 @@ Expected response (shape):
 ## 6) Drawbacks & Future Enhancements
 - No automatic dataset download; can be added as a script or data loader.
 - LLM prompt is static; future work could add intent detection or structured extraction.
-- For larger datasets, distributed vector stores (Pinecone, Weaviate) would scale better.
+- Consider adding caching or batching for embeddings to improve indexing throughput.
 - Add monitoring (latency, recall metrics), tracing, and evaluation harness.

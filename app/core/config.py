@@ -12,10 +12,9 @@ class Settings(BaseSettings):
 
     data_path: str = Field(default="./data/lf_jobs.csv")
     vector_dir: str = Field(default="./storage")
-    collection_name: str = Field(default="jobs")
-
-    embedding_model: str = Field(default="sentence-transformers/all-MiniLM-L6-v2")
+    embedding_model: str = Field(default="models/text-embedding-004")
     embedding_batch_size: int = Field(default=64)
+    gemini_api_key: str | None = Field(default=None)
 
     top_k: int = Field(default=5)
     use_hybrid: bool = Field(default=False)
@@ -27,6 +26,12 @@ class Settings(BaseSettings):
     llm_model: str = Field(default="gpt-4o-mini")
     llm_temperature: float = Field(default=0.2)
     llm_max_tokens: int = Field(default=500)
+
+    pinecone_api_key: str | None = Field(default=None)
+    pinecone_index: str = Field(default="job-rag")
+    pinecone_cloud: str = Field(default="aws")
+    pinecone_region: str = Field(default="us-east-1")
+    pinecone_metric: str = Field(default="cosine")
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 

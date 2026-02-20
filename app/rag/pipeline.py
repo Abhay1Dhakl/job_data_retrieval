@@ -8,7 +8,7 @@ from app.rag.llm import OpenAICompatibleClient
 from app.rag.prompts import build_prompt
 from app.rag.reranker import CrossEncoderReranker, build_reranker
 from app.rag.retriever import BM25Index, RetrievedChunk, Retriever
-from app.rag.vector_store import ChromaVectorStore
+from app.rag.vector_store import PineconeVectorStore
 
 
 class RagPipeline:
@@ -50,12 +50,16 @@ class RagPipeline:
 
 
 def build_pipeline(settings: Settings) -> RagPipeline:
-    vector_store = ChromaVectorStore(
-        persist_dir=settings.vector_dir,
-        collection_name=settings.collection_name,
+    vector_store = PineconeVectorStore(
+        api_key=settings.pinecone_api_key,
+        index_name=settings.pinecone_index,
+        cloud=settings.pinecone_cloud,
+        region=settings.pinecone_region,
+        metric=settings.pinecone_metric,
     )
     embedding_model = EmbeddingModel(
         model_name=settings.embedding_model,
+        api_key=settings.gemini_api_key,
         batch_size=settings.embedding_batch_size,
     )
 

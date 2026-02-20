@@ -9,7 +9,7 @@ import numpy as np
 from rank_bm25 import BM25Okapi
 
 from app.rag.embeddings import EmbeddingModel
-from app.rag.vector_store import ChromaVectorStore
+from app.rag.vector_store import PineconeVectorStore
 
 
 _TOKEN_RE = re.compile(r"\b\w+\b")
@@ -59,7 +59,7 @@ class BM25Index:
 class Retriever:
     def __init__(
         self,
-        vector_store: ChromaVectorStore,
+        vector_store: PineconeVectorStore,
         embedding_model: EmbeddingModel,
         top_k: int = 5,
         bm25_index: Optional[BM25Index] = None,
@@ -80,7 +80,7 @@ class Retriever:
         return self._merge_results(vector_results, bm25_results)
 
     def _vector_search(self, query: str, top_k: int) -> List[RetrievedChunk]:
-        query_embedding = self.embedding_model.embed([query])
+        query_embedding = self.embedding_model.embed_query([query])
         results = self.vector_store.query(query_embedding, n_results=top_k)
         if not results:
             return []
