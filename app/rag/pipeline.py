@@ -56,10 +56,10 @@ def build_pipeline(settings: Settings) -> RagPipeline:
         cloud=settings.pinecone_cloud,
         region=settings.pinecone_region,
         metric=settings.pinecone_metric,
+        dimension=embedding_model.dimension(),
     )
     embedding_model = EmbeddingModel(
         model_name=settings.embedding_model,
-        api_key=settings.gemini_api_key,
         batch_size=settings.embedding_batch_size,
     )
 

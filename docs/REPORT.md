@@ -3,7 +3,7 @@
 ## 1) Architecture Overview
 The system is a standard RAG stack:
 - **Ingestion**: `scripts/build_index.py` reads the LF Jobs CSV, cleans HTML, and chunks descriptions.
-- **Embedding**: `app/rag/embeddings.py` uses Gemini embeddings to embed each chunk.
+- **Embedding**: `app/rag/embeddings.py` uses a local Sentence-Transformers model (`intfloat/e5-large-v2`, 1024-dim).
 - **Vector Store**: `app/rag/vector_store.py` stores embeddings and metadata in Pinecone for similarity search.
 - **Retriever**: `app/rag/retriever.py` runs vector search and optionally combines it with BM25 scores for hybrid retrieval.
 - **Reranker (optional)**: `app/rag/reranker.py` uses a cross-encoder model for improved ranking.
@@ -12,10 +12,11 @@ The system is a standard RAG stack:
 
 ## 2) Engineering Decisions
 - **Pinecone for vector storage**: Managed vector store with scalable search.
-- **Gemini embeddings**: Hosted embeddings with strong multilingual and semantic performance.
+- **Local embeddings**: Free of external API quotas; `e5-large-v2` requires query/passage prefixes.
 - **Hybrid retrieval**: BM25 adds lexical precision; combined scoring uses min-max normalization.
 - **OpenAI-compatible LLM**: Keeps provider flexible (OpenAI, Azure, or other compatible endpoints).
 - **Config via Pydantic Settings**: Centralized, typed configuration with `.env` support.
+- **Embedding projection**: Optional random projection to meet vector dimension limits (e.g., 1024).
 
 ## 3) Setup & Installation
 1. Install dependencies: `pip install -r requirements.txt`

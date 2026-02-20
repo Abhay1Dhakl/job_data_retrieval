@@ -12,9 +12,8 @@ class Settings(BaseSettings):
 
     data_path: str = Field(default="./data/lf_jobs.csv")
     vector_dir: str = Field(default="./storage")
-    embedding_model: str = Field(default="models/text-embedding-004")
-    embedding_batch_size: int = Field(default=64)
-    gemini_api_key: str | None = Field(default=None)
+    embedding_model: str = Field(default="intfloat/e5-large-v2")
+    embedding_batch_size: int = Field(default=16)
 
     top_k: int = Field(default=5)
     use_hybrid: bool = Field(default=False)
@@ -33,7 +32,7 @@ class Settings(BaseSettings):
     pinecone_region: str = Field(default="us-east-1")
     pinecone_metric: str = Field(default="cosine")
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+    model_config = SettingsConfigDict(env_file=(".env", ".env.example"), case_sensitive=False)
 
 
 @lru_cache

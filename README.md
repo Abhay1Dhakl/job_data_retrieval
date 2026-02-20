@@ -4,7 +4,7 @@ A production-ready Retrieval-Augmented Generation (RAG) service for job data. It
 
 ## Features
 - Clean + chunk job descriptions (HTML-safe)
-- Gemini embeddings
+- Local embeddings via Sentence-Transformers (`intfloat/e5-large-v2`, 1024-dim)
 - Vector search backed by Pinecone
 - Optional hybrid retrieval with BM25
 - Optional cross-encoder reranking
@@ -21,7 +21,7 @@ pip install -r requirements.txt
 
 2. Place the dataset CSV at `data/lf_jobs.csv` or change `DATA_PATH` in `.env`.
 
-3. Configure environment variables (Gemini + Pinecone):
+3. Configure environment variables (Local 1024-dim embeddings + Pinecone):
 
 ```bash
 cp .env.example .env
@@ -74,6 +74,8 @@ Example response shape:
 - Reranking requires setting `RERANK_MODEL` in `.env` (e.g., `cross-encoder/ms-marco-MiniLM-L-6-v2`).
 - LLM responses require `LLM_API_KEY`. If missing, the API returns retrieval-only results.
 - Pinecone index configuration is controlled via `PINECONE_*` env vars in `.env`.
+- Pinecone index dimension must match your embedding dimension (1024 for `intfloat/e5-large-v2`).
+- `intfloat/e5-large-v2` performs best when inputs are prefixed with `query:` (for searches) and `passage:` (for documents).
 
 ## Project Structure
 - `app/` application code

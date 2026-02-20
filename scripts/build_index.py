@@ -60,7 +60,6 @@ def build_index(data_path: str, vector_dir: str, index_name: str) -> None:
     settings = get_settings()
     embedder = EmbeddingModel(
         settings.embedding_model,
-        settings.gemini_api_key,
         settings.embedding_batch_size,
     )
     vector_store = PineconeVectorStore(
