@@ -19,7 +19,7 @@ The system is a standard RAG stack:
 - **Embedding projection**: Optional random projection to meet vector dimension limits (e.g., 1024).
 
 ## 3) Setup & Installation
-1. Install dependencies: `uv venv` then `uv pip install -e backend`
+1. Install dependencies: `uv venv` then `uv pip install -e backend` (install `uv` first if needed)
 2. Add dataset CSV at `data/lf_jobs.csv` or set `DATA_PATH`.
 3. Configure `.env` from `.env.example` and set `LLM_API_KEY` if using LLM responses.
 4. Build indexes: `PYTHONPATH=backend python backend/scripts/build_index.py`

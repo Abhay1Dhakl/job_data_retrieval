@@ -11,6 +11,7 @@ A production-ready Retrieval-Augmented Generation (RAG) service for job data. It
 - OpenAI-compatible LLM integration
 
 ## Setup
+0. Install `uv` if needed (e.g., `pipx install uv` or `brew install uv`).
 1. Create a virtual environment and install dependencies (uv):
 
 ```bash
@@ -26,6 +27,8 @@ uv pip install -e backend
 ```bash
 cp .env.example .env
 ```
+
+Docker Compose will read `.env.example` by default; `.env` overrides it when present.
 
 4. Build the index:
 

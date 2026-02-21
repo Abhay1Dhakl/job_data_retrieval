@@ -5,28 +5,11 @@ services:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
-    environment:
-      DATA_PATH: ${DATA_PATH:-/app/data/lf_jobs.csv}
-      VECTOR_DIR: ${VECTOR_DIR:-/app/storage}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-intfloat/e5-large-v2}
-      EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-16}
-      TOP_K: ${TOP_K:-5}
-      USE_HYBRID: ${USE_HYBRID:-false}
-      HYBRID_ALPHA: ${HYBRID_ALPHA:-0.35}
-      RERANK_MODEL: ${RERANK_MODEL:-}
-      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
-      LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
-      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.2}
-      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-500}
-      PINECONE_API_KEY: ${PINECONE_API_KEY:-}
-      PINECONE_INDEX: ${PINECONE_INDEX:-job-rag}
-      PINECONE_CLOUD: ${PINECONE_CLOUD:-aws}
-      PINECONE_REGION: ${PINECONE_REGION:-us-east-1}
-      PINECONE_METRIC: ${PINECONE_METRIC:-cosine}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-300}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://job_rag:job_rag@postgres:5432/job_rag}
+    env_file:
+      - path: .env.example
+        required: true
+      - path: .env
+        required: false
     ports:
       - "8000:8000"
     volumes:
@@ -40,8 +23,11 @@ services:
     build:
       context: .
       dockerfile: docker/frontend.Dockerfile
-    environment:
-      API_BASE_URL: ${API_BASE_URL:-http://api:8000}
+    env_file:
+      - path: .env.example
+        required: true
+      - path: .env
+        required: false
     ports:
       - "3000:3000"
     depends_on:
@@ -56,10 +42,11 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-job_rag}
-      POSTGRES_USER: ${POSTGRES_USER:-job_rag}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-job_rag}
+    env_file:
+      - path: .env.example
+        required: true
+      - path: .env
+        required: false
     ports:
       - "5432:5432"
     volumes:

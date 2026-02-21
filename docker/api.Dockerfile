@@ -8,8 +8,9 @@ WORKDIR /app
 
 COPY backend/pyproject.toml /app/backend/pyproject.toml
 COPY backend/app /app/backend/app
-RUN pip install --no-cache-dir --upgrade pip \\
-    && pip install --no-cache-dir /app/backend
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir uv \
+    && uv pip install --system /app/backend
 
 COPY backend/scripts /app/backend/scripts
 COPY docs ./docs
