@@ -9,6 +9,36 @@ const hints = [
   "frontend developer react"
 ];
 
+const parseSuggestions = (text) => {
+  if (!text) return [];
+  const lines = text.split(/\r?\n/);
+  const items = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const match = trimmed.match(/^[-*•\d+).]\s*\*\*(.+?)\*\*:\s*(.+)$/);
+    if (!match) continue;
+    const titleLine = match[1].trim();
+    const description = match[2].trim();
+    const parts = titleLine.split(",").map((part) => part.trim()).filter(Boolean);
+    const role = parts[0] || titleLine;
+    const company = parts[1] || "";
+    const location = parts.slice(2).join(", ");
+    items.push({ role, company, location, description });
+  }
+  return items;
+};
+
+const extractSummary = (text) => {
+  if (!text) return "";
+  const lines = text.split(/\r?\n/);
+  const summary = [];
+  for (const line of lines) {
+    if (line.trim().match(/^[-*•\d+).]\s*\*\*/)) break;
+    summary.push(line);
+  }
+  return summary.join("\n").trim();
+};
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [topK, setTopK] = useState(5);
@@ -18,6 +48,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [answer, setAnswer] = useState("");
   const [hits, setHits] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -25,6 +56,7 @@ export default function Home() {
     setError("");
     setAnswer("");
     setHits([]);
+    setSuggestions([]);
 
     try {
       const res = await fetch("/api/query", {
@@ -44,7 +76,9 @@ export default function Home() {
       }
 
       const data = await res.json();
-      setAnswer(data.answer || "");
+      const responseAnswer = data.answer || "";
+      setAnswer(responseAnswer);
+      setSuggestions(parseSuggestions(responseAnswer));
       setHits(data.hits || []);
     } catch (err) {
       setError(err.message || "Something went wrong.");
@@ -52,6 +86,8 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  const summary = suggestions.length > 0 ? extractSummary(answer) : answer;
 
   return (
     <main>
@@ -134,20 +170,44 @@ export default function Home() {
 
         {error && <div className="error">{error}</div>}
 
-        {answer && <div className="answer">{answer}</div>}
+        {summary && <div className="answer">{summary}</div>}
+
+        {suggestions.length > 0 && (
+          <>
+            <div className="section-title">Suggested Roles</div>
+            <div className="cards">
+              {suggestions.map((item, index) => (
+                <div className="card" key={`${item.role}-${index}`}>
+                  <div className="card-title">{item.role}</div>
+                  <div className="card-meta">
+                    {item.company && <span className="chip">{item.company}</span>}
+                    {item.location && <span className="chip">{item.location}</span>}
+                  </div>
+                  <div className="card-body">{item.description}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {hits.length > 0 && (
-          <div className="hits">
-            {hits.map((hit) => (
-              <div className="hit" key={hit.id}>
-                <h4>{hit.job_title}</h4>
-                <div className="meta">
-                  {hit.company} · {hit.location} · {hit.level} · score {hit.score.toFixed(2)}
+          <>
+            <div className="section-title">Retrieved Jobs</div>
+            <div className="cards">
+              {hits.map((hit) => (
+                <div className="card" key={hit.id}>
+                  <div className="card-title">{hit.job_title}</div>
+                  <div className="card-meta">
+                    <span className="chip">{hit.company}</span>
+                    <span className="chip">{hit.location}</span>
+                    <span className="chip">{hit.level}</span>
+                    <span className="chip">score {hit.score.toFixed(2)}</span>
+                  </div>
+                  <div className="card-body">{hit.snippet}</div>
                 </div>
-                <div>{hit.snippet}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
         <div className="footer">
