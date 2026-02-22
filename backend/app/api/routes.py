@@ -16,11 +16,23 @@ router = APIRouter()
 
 @lru_cache
 def get_pipeline() -> RagPipeline:
+    """Create and cache a configured RAG pipeline instance.
+
+    Returns:
+        A configured RagPipeline.
+    """
     settings = get_settings()
     return build_pipeline(settings)
 
 
 def _to_hit(chunk) -> JobHit:
+    """Convert a retrieved chunk into an API response hit.
+
+    Args:
+        chunk: A retrieved chunk with metadata and score.
+    Returns:
+        A JobHit formatted for API responses.
+    """
     meta = chunk.metadata
     snippet = chunk.text[:240] + ("..." if len(chunk.text) > 240 else "")
     return JobHit(
@@ -35,6 +47,16 @@ def _to_hit(chunk) -> JobHit:
 
 
 def _cache_key(payload: QueryRequest, top_k: int, use_hybrid: bool, use_rerank: bool) -> str:
+    """Build a stable cache key for a query request.
+
+    Args:
+        payload: The query request payload.
+        top_k: The number of results to return.
+        use_hybrid: Whether hybrid retrieval is enabled.
+        use_rerank: Whether reranking is enabled.
+    Returns:
+        A deterministic cache key string.
+    """
     blob = json.dumps(
         {
             "query": payload.query,
@@ -53,6 +75,15 @@ def query_jobs(
     settings: Settings = Depends(get_settings),
     pipeline: RagPipeline = Depends(get_pipeline),
 ) -> QueryResponse:
+    """Query the RAG pipeline and return a formatted response.
+
+    Args:
+        payload: The incoming query payload.
+        settings: Application settings dependency.
+        pipeline: RAG pipeline dependency.
+    Returns:
+        A response containing the generated answer and job hits.
+    """
     top_k = payload.top_k or settings.top_k
     use_hybrid = payload.use_hybrid if payload.use_hybrid is not None else settings.use_hybrid
     use_rerank = payload.use_rerank if payload.use_rerank is not None else bool(settings.rerank_model)

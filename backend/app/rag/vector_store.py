@@ -6,6 +6,8 @@ from pinecone import Pinecone, ServerlessSpec
 
 
 class PineconeVectorStore:
+    """Pinecone-backed vector store abstraction."""
+
     def __init__(
         self,
         api_key: Optional[str],
@@ -15,6 +17,16 @@ class PineconeVectorStore:
         metric: str = "cosine",
         dimension: Optional[int] = None,
     ) -> None:
+        """Initialize the Pinecone vector store.
+
+        Args:
+            api_key: Pinecone API key.
+            index_name: Name of the Pinecone index.
+            cloud: Pinecone cloud provider.
+            region: Pinecone region.
+            metric: Similarity metric (e.g., "cosine").
+            dimension: Embedding dimension (required if creating the index).
+        """
         if not api_key:
             raise RuntimeError("PINECONE_API_KEY is not configured")
         if not index_name:
@@ -26,6 +38,7 @@ class PineconeVectorStore:
         self._index = self._pc.Index(index_name)
 
     def _list_index_names(self) -> List[str]:
+        """Return existing index names from the Pinecone client."""
         indexes = self._pc.list_indexes()
         if isinstance(indexes, dict):
             if "indexes" in indexes and isinstance(indexes["indexes"], list):
@@ -54,6 +67,14 @@ class PineconeVectorStore:
         region: str,
         dimension: Optional[int],
     ) -> None:
+        """Ensure the index exists, creating it if needed.
+
+        Args:
+            index_name: Name of the index to ensure.
+            cloud: Cloud provider.
+            region: Cloud region.
+            dimension: Embedding dimension for index creation.
+        """
         existing = set(self._list_index_names())
         if index_name in existing:
             return
@@ -75,6 +96,14 @@ class PineconeVectorStore:
         documents: List[str],
         metadatas: List[Dict[str, Any]],
     ) -> None:
+        """Upsert embeddings and metadata into the index.
+
+        Args:
+            ids: Vector IDs.
+            embeddings: Embedding vectors.
+            documents: Raw document text associated with embeddings.
+            metadatas: Metadata dicts aligned with the documents.
+        """
         if not ids:
             return
         vectors = []
@@ -85,6 +114,14 @@ class PineconeVectorStore:
         self._index.upsert(vectors=vectors)
 
     def query(self, query_embeddings: List[List[float]], n_results: int) -> List[List[Dict[str, Any]]]:
+        """Query the index for nearest neighbors.
+
+        Args:
+            query_embeddings: Query vectors.
+            n_results: Number of results per query.
+        Returns:
+            A list of result lists with id, document, metadata, and score.
+        """
         if not query_embeddings:
             return []
         hits: List[List[Dict[str, Any]]] = []
@@ -115,6 +152,11 @@ class PineconeVectorStore:
         return hits
 
     def count(self) -> int:
+        """Return the number of vectors in the index.
+
+        Returns:
+            Total vector count.
+        """
         stats = self._index.describe_index_stats()
         if isinstance(stats, dict):
             return int(stats.get("total_vector_count", 0))

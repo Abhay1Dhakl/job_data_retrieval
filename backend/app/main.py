@@ -16,4 +16,9 @@ app.include_router(router)
 
 @app.get("/health")
 def health() -> dict:
+    """Return a simple health check payload.
+
+    Returns:
+        A JSON-serializable status dict.
+    """
     return {"status": "ok"}

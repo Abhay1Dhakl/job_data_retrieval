@@ -7,6 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Application configuration loaded from environment and defaults."""
+
     app_name: str = Field(default="job-rag")
     log_level: str = Field(default="INFO")
 
@@ -40,4 +42,9 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    """Return a cached Settings instance.
+
+    Returns:
+        The application Settings instance.
+    """
     return Settings()

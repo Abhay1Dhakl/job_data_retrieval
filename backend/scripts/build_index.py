@@ -17,6 +17,8 @@ from app.rag.vector_store import PineconeVectorStore
 
 @dataclass
 class JobRecord:
+    """Structured job record parsed from the CSV dataset."""
+
     job_id: str
     job_category: str
     job_title: str
@@ -29,12 +31,26 @@ class JobRecord:
 
 
 def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Strip whitespace from column names.
+
+    Args:
+        df: Input dataframe.
+    Returns:
+        A copy of the dataframe with normalized column names.
+    """
     df = df.copy()
     df.columns = [col.strip() for col in df.columns]
     return df
 
 
 def load_jobs(path: str) -> List[JobRecord]:
+    """Load job records from a CSV file.
+
+    Args:
+        path: Path to the CSV dataset.
+    Returns:
+        A list of JobRecord entries.
+    """
     df = _normalize_columns(pd.read_csv(path))
     records: List[JobRecord] = []
     for _, row in df.iterrows():
@@ -56,6 +72,13 @@ def load_jobs(path: str) -> List[JobRecord]:
 
 
 def build_index(data_path: str, vector_dir: str, index_name: str) -> None:
+    """Build Pinecone and BM25 indexes from job data.
+
+    Args:
+        data_path: Path to the CSV dataset.
+        vector_dir: Directory for vector/BM25 artifacts.
+        index_name: Name of the Pinecone index to use.
+    """
     os.makedirs(vector_dir, exist_ok=True)
     settings = get_settings()
     embedder = EmbeddingModel(
@@ -113,6 +136,7 @@ def build_index(data_path: str, vector_dir: str, index_name: str) -> None:
 
 
 def main() -> None:
+    """CLI entry point for building the indexes."""
     settings = get_settings()
     parser = argparse.ArgumentParser(description="Build vector and BM25 indexes.")
     parser.add_argument("--data", default=settings.data_path, help="Path to CSV dataset")

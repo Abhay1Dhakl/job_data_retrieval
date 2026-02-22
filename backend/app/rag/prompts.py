@@ -6,6 +6,14 @@ from app.rag.retriever import RetrievedChunk
 
 
 def build_prompt(query: str, chunks: List[RetrievedChunk]) -> str:
+    """Build the LLM prompt from a query and retrieved chunks.
+
+    Args:
+        query: User query string.
+        chunks: Retrieved chunks to include as context.
+    Returns:
+        A formatted prompt string for the LLM.
+    """
     context_blocks = []
     for idx, chunk in enumerate(chunks, start=1):
         meta = chunk.metadata

@@ -12,12 +12,21 @@ from app.rag.vector_store import PineconeVectorStore
 
 
 class RagPipeline:
+    """Orchestrates retrieval, optional reranking, and generation."""
+
     def __init__(
         self,
         retriever: Retriever,
         llm: OpenAICompatibleClient,
         reranker: Optional[CrossEncoderReranker] = None,
     ) -> None:
+        """Initialize the pipeline components.
+
+        Args:
+            retriever: Retriever instance for fetching relevant chunks.
+            llm: LLM client used to generate answers.
+            reranker: Optional reranker for refining retrieval results.
+        """
         self.retriever = retriever
         self.llm = llm
         self.reranker = reranker
@@ -29,6 +38,16 @@ class RagPipeline:
         use_hybrid: bool,
         use_rerank: bool,
     ) -> tuple[str, List[RetrievedChunk]]:
+        """Run retrieval (and optional reranking) then generate an answer.
+
+        Args:
+            query: User query string.
+            top_k: Number of results to return.
+            use_hybrid: Whether to blend vector and BM25 results.
+            use_rerank: Whether to apply reranking.
+        Returns:
+            A tuple of (answer, retrieved chunks).
+        """
         results = self.retriever.retrieve(query, use_hybrid=use_hybrid)
         if results and use_rerank and self.reranker:
             results = self.reranker.rerank(query, results)[:top_k]
@@ -40,6 +59,13 @@ class RagPipeline:
         return answer, results
 
     def _safe_generate(self, prompt: str) -> str:
+        """Generate with a safe fallback if the LLM call fails.
+
+        Args:
+            prompt: Prompt passed to the LLM.
+        Returns:
+            The generated answer, or a fallback message if generation fails.
+        """
         try:
             return self.llm.generate(prompt)
         except Exception:
@@ -50,6 +76,13 @@ class RagPipeline:
 
 
 def build_pipeline(settings: Settings) -> RagPipeline:
+    """Construct a RagPipeline based on application settings.
+
+    Args:
+        settings: Application settings.
+    Returns:
+        A configured RagPipeline instance.
+    """
     embedding_model = EmbeddingModel(
         model_name=settings.embedding_model,
         batch_size=settings.embedding_batch_size,
