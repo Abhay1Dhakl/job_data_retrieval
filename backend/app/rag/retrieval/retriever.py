@@ -9,7 +9,7 @@ import numpy as np
 from rank_bm25 import BM25Okapi
 
 from app.rag.embeddings import EmbeddingModel
-from app.rag.vector_store import PineconeVectorStore
+from app.rag.retrieval.vector_store import PineconeVectorStore
 
 
 _TOKEN_RE = re.compile(r"\b\w+\b")

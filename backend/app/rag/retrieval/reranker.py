@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from sentence_transformers import CrossEncoder
 
-from app.rag.retriever import RetrievedChunk
+from app.rag.retrieval.retriever import RetrievedChunk
 
 
 class CrossEncoderReranker:

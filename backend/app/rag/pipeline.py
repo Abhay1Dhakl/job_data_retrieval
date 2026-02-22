@@ -6,9 +6,8 @@ from app.core.config import Settings
 from app.rag.embeddings import EmbeddingModel
 from app.rag.llm import OpenAICompatibleClient
 from app.rag.prompts import build_prompt
-from app.rag.reranker import CrossEncoderReranker, build_reranker
-from app.rag.retriever import BM25Index, RetrievedChunk, Retriever
-from app.rag.vector_store import PineconeVectorStore
+from app.rag.retrieval import BM25Index, CrossEncoderReranker, RetrievedChunk, Retriever, build_reranker
+from app.rag.retrieval import PineconeVectorStore
 
 
 class RagPipeline:

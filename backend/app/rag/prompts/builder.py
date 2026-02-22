@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List
 
-from app.rag.retriever import RetrievedChunk
+from app.rag.retrieval import RetrievedChunk
 
 
 def build_prompt(query: str, chunks: List[RetrievedChunk]) -> str:

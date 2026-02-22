@@ -12,7 +12,7 @@ from tqdm import tqdm
 from app.core.config import get_settings
 from app.rag.embeddings import EmbeddingModel
 from app.rag.preprocess import chunk_text, clean_html
-from app.rag.vector_store import PineconeVectorStore
+from app.rag.retrieval import PineconeVectorStore
 
 
 @dataclass
