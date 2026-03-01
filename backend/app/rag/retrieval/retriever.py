@@ -115,33 +115,49 @@ class Retriever:
         self.bm25_index = bm25_index
         self.hybrid_alpha = hybrid_alpha
 
-    def retrieve(self, query: str, use_hybrid: bool = False) -> List[RetrievedChunk]:
+    def retrieve(
+        self,
+        query: str,
+        use_hybrid: bool = False,
+        top_k: Optional[int] = None,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[RetrievedChunk]:
         """Retrieve relevant chunks for a query.
 
         Args:
             query: Query string.
             use_hybrid: Whether to combine vector and BM25 results.
+            top_k: Optional override for number of results to return.
+            filters: Optional metadata filters to apply.
         Returns:
             A list of retrieved chunks.
         """
-        vector_results = self._vector_search(query, self.top_k)
+        effective_top_k = top_k or self.top_k
+        vector_results = self._vector_search(query, effective_top_k, filters=filters)
         if not use_hybrid or not self.bm25_index:
-            return vector_results
+            return self._filter_results(vector_results, filters)
 
-        bm25_results = self.bm25_index.query(query, self.top_k)
-        return self._merge_results(vector_results, bm25_results)
+        bm25_results = self.bm25_index.query(query, effective_top_k)
+        merged = self._merge_results(vector_results, bm25_results, effective_top_k)
+        return self._filter_results(merged, filters)
 
-    def _vector_search(self, query: str, top_k: int) -> List[RetrievedChunk]:
+    def _vector_search(
+        self,
+        query: str,
+        top_k: int,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[RetrievedChunk]:
         """Run vector search against the vector store.
 
         Args:
             query: Query string.
             top_k: Number of results to return.
+            filters: Optional metadata filters to apply.
         Returns:
             A list of retrieved chunks from vector search.
         """
         query_embedding = self.embedding_model.embed_query([query])
-        results = self.vector_store.query(query_embedding, n_results=top_k)
+        results = self.vector_store.query(query_embedding, n_results=top_k, metadata_filter=filters)
         if not results:
             return []
         return [
@@ -158,12 +174,14 @@ class Retriever:
         self,
         vector_results: List[RetrievedChunk],
         bm25_results: List[RetrievedChunk],
+        top_k: int,
     ) -> List[RetrievedChunk]:
         """Merge vector and BM25 results using normalized scores.
 
         Args:
             vector_results: Results from vector search.
             bm25_results: Results from BM25 search.
+            top_k: Number of results to return.
         Returns:
             A combined, score-normalized result list.
         """
@@ -192,7 +210,72 @@ class Retriever:
                 )
 
         ranked = sorted(combined.values(), key=lambda r: r.score, reverse=True)
-        return ranked[: self.top_k]
+        return ranked[:top_k]
+
+    @staticmethod
+    def _filter_results(
+        results: List[RetrievedChunk],
+        filters: Optional[Dict[str, Any]],
+    ) -> List[RetrievedChunk]:
+        """Apply metadata filters to retrieved chunks.
+
+        Args:
+            results: Retrieved chunks to filter.
+            filters: Metadata filter configuration.
+        Returns:
+            Filtered list of retrieved chunks.
+        """
+        if not results or not filters:
+            return results
+
+        filtered: List[RetrievedChunk] = []
+        for chunk in results:
+            metadata = chunk.metadata or {}
+            matched = True
+            for key, condition in filters.items():
+                if isinstance(condition, dict):
+                    if "$in" in condition:
+                        if metadata.get(key) not in condition["$in"]:
+                            matched = False
+                            break
+                    if "$eq" in condition:
+                        if metadata.get(key) != condition["$eq"]:
+                            matched = False
+                            break
+                    if "$gte" in condition:
+                        value = metadata.get(key)
+                        if value is None:
+                            matched = False
+                            break
+                        try:
+                            numeric = float(value)
+                        except (TypeError, ValueError):
+                            matched = False
+                            break
+                        if numeric < condition["$gte"]:
+                            matched = False
+                            break
+                    if "$lte" in condition:
+                        value = metadata.get(key)
+                        if value is None:
+                            matched = False
+                            break
+                        try:
+                            numeric = float(value)
+                        except (TypeError, ValueError):
+                            matched = False
+                            break
+                        if numeric > condition["$lte"]:
+                            matched = False
+                            break
+                else:
+                    if metadata.get(key) != condition:
+                        matched = False
+                        break
+            if matched:
+                filtered.append(chunk)
+
+        return filtered
 
     @staticmethod
     def _normalize(scores: Iterable[float]) -> List[float]:

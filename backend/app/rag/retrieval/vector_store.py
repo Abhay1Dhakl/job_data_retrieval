@@ -113,12 +113,18 @@ class PineconeVectorStore:
             vectors.append((vector_id, embeddings[idx], metadata))
         self._index.upsert(vectors=vectors)
 
-    def query(self, query_embeddings: List[List[float]], n_results: int) -> List[List[Dict[str, Any]]]:
+    def query(
+        self,
+        query_embeddings: List[List[float]],
+        n_results: int,
+        metadata_filter: Optional[Dict[str, Any]] = None,
+    ) -> List[List[Dict[str, Any]]]:
         """Query the index for nearest neighbors.
 
         Args:
             query_embeddings: Query vectors.
             n_results: Number of results per query.
+            metadata_filter: Optional metadata filter for the search.
         Returns:
             A list of result lists with id, document, metadata, and score.
         """
@@ -126,11 +132,14 @@ class PineconeVectorStore:
             return []
         hits: List[List[Dict[str, Any]]] = []
         for embedding in query_embeddings:
-            response = self._index.query(
-                vector=embedding,
-                top_k=n_results,
-                include_metadata=True,
-            )
+            query_kwargs: Dict[str, Any] = {
+                "vector": embedding,
+                "top_k": n_results,
+                "include_metadata": True,
+            }
+            if metadata_filter:
+                query_kwargs["filter"] = metadata_filter
+            response = self._index.query(**query_kwargs)
             row: List[Dict[str, Any]] = []
             if isinstance(response, dict):
                 matches = response.get("matches", [])

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import List, Optional
+import logging
+import time
+from typing import Any, Dict, List, Optional
 
 from app.core.config import Settings
 from app.rag.embeddings import EmbeddingModel
@@ -36,6 +38,8 @@ class RagPipeline:
         top_k: int,
         use_hybrid: bool,
         use_rerank: bool,
+        filters: Optional[Dict[str, Any]] = None,
+        post_filters: Optional[Dict[str, Any]] = None,
     ) -> tuple[str, List[RetrievedChunk]]:
         """Run retrieval (and optional reranking) then generate an answer.
 
@@ -44,17 +48,56 @@ class RagPipeline:
             top_k: Number of results to return.
             use_hybrid: Whether to blend vector and BM25 results.
             use_rerank: Whether to apply reranking.
+            filters: Optional metadata filters applied during retrieval.
+            post_filters: Optional filters applied after retrieval.
         Returns:
             A tuple of (answer, retrieved chunks).
         """
-        results = self.retriever.retrieve(query, use_hybrid=use_hybrid)
-        if results and use_rerank and self.reranker:
-            results = self.reranker.rerank(query, results)[:top_k]
-        else:
-            results = results[:top_k]
+        logger = logging.getLogger(__name__)
+        start = time.perf_counter()
 
+        retrieval_start = time.perf_counter()
+        results = self.retriever.retrieve(
+            query,
+            use_hybrid=use_hybrid,
+            top_k=top_k,
+            filters=filters,
+        )
+        retrieval_ms = (time.perf_counter() - retrieval_start) * 1000.0
+
+        post_start = time.perf_counter()
+        results = self._apply_post_filters(results, post_filters)
+        post_ms = (time.perf_counter() - post_start) * 1000.0
+
+        rerank_ms = 0.0
+        if results and use_rerank and self.reranker:
+            rerank_start = time.perf_counter()
+            results = self.reranker.rerank(query, results)
+            rerank_ms = (time.perf_counter() - rerank_start) * 1000.0
+
+        results = results[:top_k]
+
+        prompt_start = time.perf_counter()
         prompt = build_prompt(query, results)
+        prompt_ms = (time.perf_counter() - prompt_start) * 1000.0
+
+        llm_start = time.perf_counter()
         answer = self._safe_generate(prompt)
+        llm_ms = (time.perf_counter() - llm_start) * 1000.0
+        total_ms = (time.perf_counter() - start) * 1000.0
+
+        logger.info(
+            "rag_timing total_ms=%.1f retrieval_ms=%.1f post_ms=%.1f rerank_ms=%.1f prompt_ms=%.1f llm_ms=%.1f results=%d use_hybrid=%s use_rerank=%s",
+            total_ms,
+            retrieval_ms,
+            post_ms,
+            rerank_ms,
+            prompt_ms,
+            llm_ms,
+            len(results),
+            use_hybrid,
+            use_rerank,
+        )
         return answer, results
 
     def _safe_generate(self, prompt: str) -> str:
@@ -72,6 +115,53 @@ class RagPipeline:
                 "LLM not configured. Showing top matching jobs based on retrieval. "
                 "Set LLM_API_KEY to enable generated answers."
             )
+
+    @staticmethod
+    def _apply_post_filters(
+        results: List[RetrievedChunk],
+        post_filters: Optional[Dict[str, Any]],
+    ) -> List[RetrievedChunk]:
+        """Apply lightweight post-filters to retrieved chunks.
+
+        Args:
+            results: Retrieved chunks to filter.
+            post_filters: Post-filter configuration.
+        Returns:
+            Filtered list of retrieved chunks.
+        """
+        if not results or not post_filters:
+            return results
+
+        min_words = post_filters.get("min_words")
+        max_words = post_filters.get("max_words")
+        include_tags = post_filters.get("include_tags")
+        exclude_tags = post_filters.get("exclude_tags")
+
+        include_set = {tag.strip().lower() for tag in include_tags or [] if str(tag).strip()}
+        exclude_set = {tag.strip().lower() for tag in exclude_tags or [] if str(tag).strip()}
+
+        filtered: List[RetrievedChunk] = []
+        for chunk in results:
+            words = chunk.text.split()
+            word_count = len(words)
+            if min_words and word_count < min_words:
+                continue
+            if max_words and word_count > max_words:
+                continue
+
+            if include_set or exclude_set:
+                raw_tags = str(chunk.metadata.get("tags", ""))
+                tag_list = [t.strip().lower() for t in raw_tags.replace(";", ",").split(",") if t.strip()]
+                tag_set = set(tag_list)
+
+                if include_set and not (include_set & tag_set):
+                    continue
+                if exclude_set and (exclude_set & tag_set):
+                    continue
+
+            filtered.append(chunk)
+
+        return filtered
 
 
 def build_pipeline(settings: Settings) -> RagPipeline:

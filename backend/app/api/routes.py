@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime, timezone
 from functools import lru_cache
 
 from fastapi import APIRouter, Depends
@@ -9,7 +10,7 @@ from fastapi import APIRouter, Depends
 from app.core.cache import get_cache
 from app.core.config import Settings, get_settings
 from app.rag.pipeline import RagPipeline, build_pipeline
-from app.rag.schemas import JobHit, QueryRequest, QueryResponse
+from app.rag.schemas import JobHit, PreFilterOptions, QueryRequest, QueryResponse
 
 router = APIRouter()
 
@@ -57,16 +58,71 @@ def _cache_key(payload: QueryRequest, top_k: int, use_hybrid: bool, use_rerank: 
     Returns:
         A deterministic cache key string.
     """
+    filters_payload = (
+        payload.filters.model_dump(exclude_none=True, mode="json") if payload.filters else None
+    )
+    post_filters_payload = (
+        payload.post_filters.model_dump(exclude_none=True, mode="json") if payload.post_filters else None
+    )
     blob = json.dumps(
         {
             "query": payload.query,
             "top_k": top_k,
             "use_hybrid": use_hybrid,
             "use_rerank": use_rerank,
+            "filters": filters_payload,
+            "post_filters": post_filters_payload,
         },
         sort_keys=True,
     )
     return f"query:{hashlib.sha256(blob.encode('utf-8')).hexdigest()}"
+
+
+def _to_epoch_seconds(value: datetime) -> int:
+    """Convert a datetime to UTC epoch seconds.
+
+    Args:
+        value: Datetime to convert.
+    Returns:
+        Epoch seconds (UTC).
+    """
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return int(value.timestamp())
+
+
+def _build_pinecone_filter(filters: PreFilterOptions | None) -> dict | None:
+    """Build a Pinecone metadata filter from request options.
+
+    Args:
+        filters: Pre-filter options from the request.
+    Returns:
+        A Pinecone-compatible filter dict, or None when not set.
+    """
+    if not filters:
+        return None
+
+    result: dict = {}
+
+    if filters.company:
+        result["company"] = {"$in": [str(v) for v in filters.company]}
+    if filters.location:
+        result["location"] = {"$in": [str(v) for v in filters.location]}
+    if filters.level:
+        result["level"] = {"$in": [str(v) for v in filters.level]}
+    if filters.category:
+        result["category"] = {"$in": [str(v) for v in filters.category]}
+
+    if filters.publication_date_from or filters.publication_date_to:
+        ts_filter: dict = {}
+        if filters.publication_date_from:
+            ts_filter["$gte"] = _to_epoch_seconds(filters.publication_date_from)
+        if filters.publication_date_to:
+            ts_filter["$lte"] = _to_epoch_seconds(filters.publication_date_to)
+        if ts_filter:
+            result["publication_ts"] = ts_filter
+
+    return result or None
 
 
 @router.post("/api/query", response_model=QueryResponse)
@@ -102,11 +158,16 @@ def query_jobs(
             except Exception:
                 pass
 
+    pre_filters = _build_pinecone_filter(payload.filters)
+    post_filters = payload.post_filters.model_dump(exclude_none=True) if payload.post_filters else None
+
     answer, results = pipeline.run(
         query=payload.query,
         top_k=top_k,
         use_hybrid=use_hybrid,
         use_rerank=use_rerank,
+        filters=pre_filters,
+        post_filters=post_filters,
     )
 
     hits = [_to_hit(chunk) for chunk in results]

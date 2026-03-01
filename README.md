@@ -10,9 +10,51 @@ A production-ready Retrieval-Augmented Generation (RAG) service for job data. It
 - Optional cross-encoder reranking
 - OpenAI-compatible LLM integration
 
-## Setup
-0. Install `uv` if needed (e.g., `pipx install uv` or `brew install uv`).
-1. Create a virtual environment and install dependencies (uv):
+## Command Options To Run Project
+
+---
+
+### Option 1 — Makefile (Convenience commands)
+
+> Fastest way to run everything. Requires `uv` (local) or Docker (for Docker commands).
+
+**Step 1 — Configure `.env`**
+
+```bash
+cp .env.example .env
+# Open .env and set:
+#   PINECONE_API_KEY=your_key
+#   LLM_API_KEY=your_key   (optional — needed for LLM-generated answers)
+```
+
+**Step 2 — Local development**
+
+```bash
+make setup              # create venv + install backend deps
+make build-index        # build Pinecone + BM25 index
+make api                # start API on :8000 with hot-reload
+```
+
+**Step 2 (alt) — Docker Compose**
+
+```bash
+make docker-up          # build images + start all services (API, UI, Redis, Postgres)
+make docker-build-index # run index builder inside Docker
+make docker-down        # stop and remove all containers
+```
+
+---
+
+### Option 2 — Manual Setup (step-by-step)
+
+**Step 1 — Install `uv`**
+
+```bash
+brew install uv          # macOS
+# or: pipx install uv
+```
+
+**Step 2 — Create virtual environment and install dependencies**
 
 ```bash
 uv venv
@@ -20,37 +62,36 @@ source .venv/bin/activate
 uv pip install -e backend
 ```
 
-2. Place the dataset CSV at `data/lf_jobs.csv` or change `DATA_PATH` in `.env`.
-
-3. Configure environment variables (Local 1024-dim embeddings + Pinecone):
+**Step 3 — Configure `.env`**
 
 ```bash
 cp .env.example .env
+# Open .env and set:
+#   PINECONE_API_KEY=your_key
+#   LLM_API_KEY=your_key   (optional — needed for LLM-generated answers)
 ```
 
-Docker Compose will read `.env.example` by default; `.env` overrides it when present.
+Docker Compose reads `.env.example` by default; `.env` overrides it when present.
+If you change `EMBEDDING_MODEL`, rebuild the Docker image.
 
-The API image pre-downloads the embedding model at build time. If you change
-`EMBEDDING_MODEL`, rebuild the image.
+**Step 4 — Place the dataset**
 
-4. Build the index:
+```
+data/lf_jobs.csv   ← put your LF Jobs CSV here
+```
+
+**Step 5 — Build the vector index**
 
 ```bash
 PYTHONPATH=backend python backend/scripts/build_index.py
 ```
 
-5. Run the API:
+**Step 6 — Start the API**
 
 ```bash
 PYTHONPATH=backend uvicorn app.main:app --reload
 ```
 
-### Convenience (Makefile)
-```bash
-make setup
-make build-index
-make api
-```
 
 ## Query API
 `POST /api/query`

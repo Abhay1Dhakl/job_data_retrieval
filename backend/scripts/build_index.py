@@ -30,6 +30,22 @@ class JobRecord:
     description: str
 
 
+def _parse_publication_ts(value: str) -> int | None:
+    """Parse a publication date string into a UTC epoch timestamp.
+
+    Args:
+        value: Raw publication date string.
+    Returns:
+        Epoch seconds if parsing succeeds; otherwise None.
+    """
+    if not value:
+        return None
+    parsed = pd.to_datetime(value, errors="coerce", utc=True)
+    if pd.isna(parsed):
+        return None
+    return int(parsed.value // 1_000_000_000)
+
+
 def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Strip whitespace from column names.
 
@@ -102,23 +118,25 @@ def build_index(data_path: str, vector_dir: str, index_name: str) -> None:
     for job in tqdm(jobs, desc="Chunking jobs"):
         if not job.description:
             continue
+        publication_ts = _parse_publication_ts(job.publication_date)
         chunks = chunk_text(job.description)
         for idx, chunk in enumerate(chunks):
             chunk_id = f"{job.job_id}-{idx}"
             ids.append(chunk_id)
             documents.append(chunk)
-            metadatas.append(
-                {
-                    "job_id": job.job_id,
-                    "job_title": job.job_title,
-                    "company": job.company,
-                    "location": job.location,
-                    "level": job.level,
-                    "category": job.job_category,
-                    "tags": job.tags,
-                    "publication_date": job.publication_date,
-                }
-            )
+            metadata = {
+                "job_id": job.job_id,
+                "job_title": job.job_title,
+                "company": job.company,
+                "location": job.location,
+                "level": job.level,
+                "category": job.job_category,
+                "tags": job.tags,
+                "publication_date": job.publication_date,
+            }
+            if publication_ts is not None:
+                metadata["publication_ts"] = publication_ts
+            metadatas.append(metadata)
 
     for i in tqdm(range(0, len(documents), settings.embedding_batch_size), desc="Embedding"):
         batch_docs = documents[i : i + settings.embedding_batch_size]
