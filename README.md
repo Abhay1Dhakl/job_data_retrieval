@@ -38,7 +38,7 @@ make api                # start API on :8000 with hot-reload
 **Step 2 (alt) — Docker Compose**
 
 ```bash
-make docker-up          # build images + start all services (API, UI, Redis, Postgres)
+make docker-up          # build images + start all services (API, UI, Redis)
 make docker-build-index # run index builder inside Docker
 make docker-down        # stop and remove all containers
 ```
