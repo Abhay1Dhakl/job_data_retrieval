@@ -170,3 +170,13 @@ class PineconeVectorStore:
         if isinstance(stats, dict):
             return int(stats.get("total_vector_count", 0))
         return int(getattr(stats, "total_vector_count", 0))
+
+    def delete_all(self) -> int:
+        """Delete all vectors from the index.
+
+        Returns:
+            The number of vectors that were deleted.
+        """
+        deleted = self.count()
+        self._index.delete(delete_all=True)
+        return deleted

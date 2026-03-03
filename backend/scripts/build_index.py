@@ -119,7 +119,13 @@ def build_index(data_path: str, vector_dir: str, index_name: str) -> None:
         if not job.description:
             continue
         publication_ts = _parse_publication_ts(job.publication_date)
-        chunks = chunk_text(job.description)
+        header = (
+            f"Job Title: {job.job_title} | Company: {job.company} | "
+            f"Location: {job.location} | Level: {job.level} | "
+            f"Category: {job.job_category}"
+        )
+        full_text = f"{header}\n\n{job.description}"
+        chunks = chunk_text(full_text)
         for idx, chunk in enumerate(chunks):
             chunk_id = f"{job.job_id}-{idx}"
             ids.append(chunk_id)

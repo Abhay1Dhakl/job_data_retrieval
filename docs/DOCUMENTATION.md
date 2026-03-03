@@ -208,16 +208,35 @@ cp .env.example .env
 
 Open `.env` and set the required values:
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PINECONE_API_KEY` | **Yes** | Your Pinecone API key |
-| `PINECONE_INDEX` | **Yes** | Name of the Pinecone index (e.g., `job-retrieval`) |
-| `LLM_API_KEY` | Optional | OpenAI (or compatible) API key |
-| `LLM_BASE_URL` | Optional | Override to use alternative providers |
-| `LLM_MODEL` | Optional | Default: `gpt-4o-mini` |
-| `USE_HYBRID` | Optional | Enable BM25 hybrid search (`true`/`false`) |
-| `RERANK_MODEL` | Optional | Cross-encoder model name, or leave empty to disable |
-| `DATA_PATH` | Optional | Path to the LF Jobs CSV (default: `./data/lf_jobs.csv`) |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `APP_NAME` | Optional | `job-rag` | FastAPI app name |
+| `LOG_LEVEL` | Optional | `INFO` | Logging level |
+| `DATA_PATH` | Optional | `./data/lf_jobs.csv` | Path to the LF Jobs CSV |
+| `VECTOR_DIR` | Optional | `./storage` | Local storage directory for BM25 index |
+| `EMBEDDING_MODEL` | Optional | `intfloat/e5-large-v2` | Sentence-Transformers embedding model |
+| `EMBEDDING_BATCH_SIZE` | Optional | `16` | Embedding batch size |
+| `TOP_K` | Optional | `5` | Default number of results to return |
+| `USE_HYBRID` | Optional | `false` | Enable BM25 hybrid search (`true`/`false`) |
+| `HYBRID_ALPHA` | Optional | `0.35` | Hybrid blending weight |
+| `RERANK_MODEL` | Optional | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Cross-encoder model name (leave empty to disable) |
+| `LLM_BASE_URL` | Optional | `https://api.openai.com/v1` | Override to use alternative providers |
+| `LLM_API_KEY` | Optional | `unset` | OpenAI (or compatible) API key (required to enable LLM answers) |
+| `LLM_MODEL` | Optional | `gpt-4o-mini` | LLM model name |
+| `LLM_TEMPERATURE` | Optional | `0.2` | LLM sampling temperature |
+| `LLM_MAX_TOKENS` | Optional | `500` | LLM max output tokens |
+| `PINECONE_API_KEY` | **Yes** | `unset` | Your Pinecone API key |
+| `PINECONE_INDEX` | **Yes** | `job-retrieval` | Pinecone index name |
+| `PINECONE_CLOUD` | Optional | `aws` | Pinecone cloud provider |
+| `PINECONE_REGION` | Optional | `us-east-1` | Pinecone region |
+| `PINECONE_METRIC` | Optional | `cosine` | Pinecone distance metric |
+| `REDIS_URL` | Optional | `redis://redis:6379/0` | Redis connection URL |
+| `CACHE_TTL_SECONDS` | Optional | `300` | Cache TTL in seconds |
+| `POSTGRES_DB` | Optional | `job_rag` | Postgres database name |
+| `POSTGRES_USER` | Optional | `job_rag` | Postgres username |
+| `POSTGRES_PASSWORD` | Optional | `job_rag` | Postgres password |
+| `DATABASE_URL` | Optional | `postgresql://job_rag:job_rag@postgres:5432/job_rag` | Postgres connection URL |
+| `API_BASE_URL` | Optional | `http://api:8000` | Backend base URL for the frontend (Docker) |
 
 #### Step 5 — Add the dataset
 

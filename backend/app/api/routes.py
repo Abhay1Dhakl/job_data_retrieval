@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from datetime import datetime, timezone
 from functools import lru_cache
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 
 from app.core.cache import get_cache
 from app.core.config import Settings, get_settings
@@ -180,3 +182,34 @@ def query_jobs(
             pass
 
     return response
+
+
+@router.delete("/api/index", response_class=JSONResponse)
+def delete_index(
+    settings: Settings = Depends(get_settings),
+    pipeline: RagPipeline = Depends(get_pipeline),
+) -> JSONResponse:
+    """Delete all vectors from the Pinecone index and the local BM25 index.
+
+    Args:
+        settings: Application settings dependency.
+        pipeline: RAG pipeline dependency.
+    Returns:
+        A JSON response with the count of deleted vectors and BM25 status.
+    """
+    deleted_vectors = pipeline.retriever.vector_store.delete_all()
+
+    bm25_path = os.path.join(settings.vector_dir, "bm25.pkl")
+    bm25_deleted = False
+    if os.path.exists(bm25_path):
+        os.remove(bm25_path)
+        bm25_deleted = True
+
+    return JSONResponse(
+        content={
+            "deleted_vectors": deleted_vectors,
+            "bm25_index_deleted": bm25_deleted,
+            "message": f"Deleted {deleted_vectors} vectors from '{settings.pinecone_index}'."
+            + (" BM25 index removed." if bm25_deleted else ""),
+        }
+    )
