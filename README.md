@@ -62,10 +62,39 @@ source .venv/bin/activate
 uv pip install -e backend
 ```
 
+**Windows (PowerShell) — `uv` + venv**
+
+```powershell
+py -m pip install --user pipx
+py -m pipx ensurepath
+pipx install uv
+
+uv venv
+.\.venv\Scripts\Activate.ps1
+uv pip install -e backend
+```
+
+**Windows (PowerShell) — standard `venv` (no `uv`)**
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e backend
+```
+
 **Step 3 — Configure `.env`**
 
 ```bash
 cp .env.example .env
+# Open .env and set:
+#   PINECONE_API_KEY=your_key
+#   LLM_API_KEY=your_key   (optional — needed for LLM-generated answers)
+```
+
+**Windows (PowerShell)**
+
+```powershell
+Copy-Item .env.example .env
 # Open .env and set:
 #   PINECONE_API_KEY=your_key
 #   LLM_API_KEY=your_key   (optional — needed for LLM-generated answers)
@@ -86,10 +115,24 @@ data/lf_jobs.csv   ← put your LF Jobs CSV here
 PYTHONPATH=backend python backend/scripts/build_index.py
 ```
 
+**Windows (PowerShell)**
+
+```powershell
+$env:PYTHONPATH = "backend"
+python backend/scripts/build_index.py
+```
+
 **Step 6 — Start the API**
 
 ```bash
 PYTHONPATH=backend uvicorn app.main:app --reload
+```
+
+**Windows (PowerShell)**
+
+```powershell
+$env:PYTHONPATH = "backend"
+uvicorn app.main:app --reload
 ```
 
 
