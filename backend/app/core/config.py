@@ -37,7 +37,11 @@ class Settings(BaseSettings):
     redis_url: str | None = Field(default=None)
     cache_ttl_seconds: int = Field(default=300, ge=0)
 
-    model_config = SettingsConfigDict(env_file=(".env", ".env.example"), case_sensitive=False)
+    model_config = SettingsConfigDict(
+        env_file=(".env", ".env.example"),
+        case_sensitive=False,
+        extra="ignore",
+    )
 
 
 @lru_cache

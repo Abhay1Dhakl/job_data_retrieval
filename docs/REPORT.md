@@ -3,11 +3,11 @@
 ## 1) Architecture Overview
 The system is a standard RAG stack:
 - **Ingestion**: `backend/scripts/build_index.py` reads the LF Jobs CSV, cleans HTML, and chunks descriptions.
-- **Embedding**: `backend/app/rag/embeddings.py` uses a local Sentence-Transformers model (`intfloat/e5-large-v2`, 1024-dim).
-- **Vector Store**: `backend/app/rag/vector_store.py` stores embeddings and metadata in Pinecone for similarity search.
-- **Retriever**: `backend/app/rag/retriever.py` runs vector search and optionally combines it with BM25 scores for hybrid retrieval.
-- **Reranker (optional)**: `backend/app/rag/reranker.py` uses a cross-encoder model for improved ranking.
-- **LLM**: `backend/app/rag/llm.py` calls an OpenAI-compatible endpoint to synthesize a concise answer.
+- **Embedding**: `backend/app/rag/embeddings/model.py` uses a local Sentence-Transformers model (`intfloat/e5-large-v2`, 1024-dim).
+- **Vector Store**: `backend/app/rag/retrieval/vector_store.py` stores embeddings and metadata in Pinecone for similarity search.
+- **Retriever**: `backend/app/rag/retrieval/retriever.py` runs vector search and optionally combines it with BM25 scores for hybrid retrieval.
+- **Reranker (optional)**: `backend/app/rag/retrieval/reranker.py` uses a cross-encoder model for improved ranking.
+- **LLM**: `backend/app/rag/llm/client.py` calls an OpenAI-compatible endpoint to synthesize a concise answer.
 - **API**: `backend/app/api/routes.py` exposes `POST /api/query`.
 
 ## 2) Engineering Decisions
@@ -16,7 +16,6 @@ The system is a standard RAG stack:
 - **Hybrid retrieval**: BM25 adds lexical precision; combined scoring uses min-max normalization.
 - **OpenAI-compatible LLM**: Keeps provider flexible (OpenAI, Azure, or other compatible endpoints).
 - **Config via Pydantic Settings**: Centralized, typed configuration with `.env` support.
-- **Embedding projection**: Optional random projection to meet vector dimension limits (e.g., 1024).
 
 ## 3) Setup & Installation
 1. Install dependencies: `uv venv` then `uv pip install -e backend` (install `uv` first if needed)

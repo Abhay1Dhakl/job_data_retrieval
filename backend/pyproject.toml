@@ -20,6 +20,11 @@ dependencies = [
   "redis==5.0.8"
 ]
 
+[project.optional-dependencies]
+test = [
+  "pytest==8.3.2"
+]
+
 [build-system]
 requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"

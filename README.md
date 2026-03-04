@@ -174,6 +174,14 @@ Example response shape:
 - Pinecone index dimension must match your embedding dimension (1024 for `intfloat/e5-large-v2`).
 - `intfloat/e5-large-v2` performs best when inputs are prefixed with `query:` (for searches) and `passage:` (for documents).
 
+## Testing
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -e "backend[test]"
+pytest
+```
+
 ## Project Structure
 - `backend/` Python API + RAG pipeline
 - `frontend/` Next.js UI
